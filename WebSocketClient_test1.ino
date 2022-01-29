@@ -64,6 +64,12 @@ void loop() {
         client.poll();
     }
     
+    // 리커넥트 함수 관련 참고
+    // https://github.com/Links2004/arduinoWebSockets/blob/master/src/WebSocketsClient.cpp
+    
+    
+    
+    
     unsigned long t = millis();
     if((t - last_10sec) > 10 * 6000) { //지정 시간 마다 브로드캐스트 테스트 1000은 1초
         counter++;
