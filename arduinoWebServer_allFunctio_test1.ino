@@ -145,7 +145,15 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 //            USE_SERIAL.printf("[%u]\n client_data : %s\n payload : %s\n", 
 //                                num, Engine_state, payload); //내용알아보기 테스트
                                 
-            //webSocket.sendTXT(num, Engine_state); //테스트 중
+            //webSocket.sendTXT(num, Engine_state); //현재 안 됨.
+            //## 지금 접속하는 클라이언트에게만 현재 상태를 반영하기 위한 메시지 보내기.
+            //## 테스트, 스트링은 되는데 받은 메시지가 저장되는 payload 외의 스트링변수는 안되는 듯?
+            //## 방법을 찾아라. 
+          
+            //##  Serial.println(ip.toString());  //## .toString() 이거 한번 해봐
+            //## [출처] NodeMCU(혹 아두이노)를 이용하여 웹소켓 통신하기(1)|작성자 코스모스
+
+          
             
             // send message to client
             // num = 클라이언트 번호
