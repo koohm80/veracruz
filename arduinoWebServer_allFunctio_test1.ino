@@ -132,6 +132,8 @@ String veracruz_name = "";
 // 클라이언트에서 서버쪽으로 값이 전송되었을때 뭘할거냐?            ↓바이트 배열이라 함
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
     String State_test = "";
+  
+    //웹소켓이벤트의 타입 
     switch(type) {
         case WStype_DISCONNECTED:
             USE_SERIAL.printf("[%u] Disconnected!\n", num);
