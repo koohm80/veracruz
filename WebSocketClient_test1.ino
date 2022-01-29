@@ -10,6 +10,7 @@ const uint16_t websockets_server_port = 8181; // Enter server port
 using namespace websockets;
 
 WebsocketsClient client;
+
 void setup() {
     Serial.begin(115200);
     // Connect to wifi
