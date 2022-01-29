@@ -182,7 +182,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
             }
             
             for(int i=0; i<15; i++){ 
-              veracruz_name += (char)state[i];
+              veracruz_name += (char)state[i];  // state 대신 payload를 써보면? 어차피 같아보이는데
 //              // 스트링내 0~i번째 문자 검출
 
 //----------------------------------------------------------------------------------------
