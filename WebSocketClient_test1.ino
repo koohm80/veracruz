@@ -28,8 +28,9 @@ using namespace websockets;
 
 WebsocketsClient client;
 
-#define Relay_1_Engine 0
+#define Relay_1_Engine 16
 #define Relay_2_BreakPedal 4
+#define Relay_3_Smartkey 5
 
 int Relay_4_Engine_state = 0;
 
@@ -45,12 +46,14 @@ void setup() {
     }
     
     pinMode(LED_BUILTIN, OUTPUT); // LED 점등 테스트용
-    
     pinMode(Relay_1_Engine, OUTPUT); // 릴레이 시동버튼 제어 출력    
     pinMode(Relay_2_BreakPedal, OUTPUT); // 릴레이 시동버튼 제어 출력
-    
-    digitalWrite(Relay_1_Engine, HIGH);
+    pinMode(Relay_3_Smartkey, OUTPUT); // 릴레이 스마트키 제어 출력
+
+    digitalWrite(LED_BUILTIN, HIGH);
+    digitalWrite(Relay_1_Engine, HIGH);       // 릴레이 꺼짐으로 초기화
     digitalWrite(Relay_2_BreakPedal, HIGH);
+    digitalWrite(Relay_3_Smartkey, HIGH);
 
     
     // Check if connected to wifi
@@ -60,26 +63,27 @@ void setup() {
     }
 
     Serial.println("Connected to Wifi, Connecting to server.");
+    
     // try to connect to Websockets server
     bool connected = client.connect(websockets_server_host, websockets_server_port, "/");
     if(connected) {
         Serial.println("Connecetd!");
-        client.send("VERACRUZ : Hello Server");
+        client.send("VERACRUZ : Hello Server. I'm Connecetd!");
+        client.send("Engine__stop/");
     } else {
         Serial.println("Not Connected!");
     }
     
-    // run callback when messages are received
+    // 서버에서 메시지 수신시(단독 수신 및 브로드캐스트)
     client.onMessage([&](WebsocketsMessage message) {
         Serial.print("Got Message: ");
         Serial.println(message.data());
 
-        //LED 점등 테스트용
-        if (message.data() == "Engine_start/"){
-          Engine_Start(); //엔진시동 절차
+        if (message.data() == "Engine_start/"){  // 시동 명령 수신시
+          Engine_Start();                        // 엔진시동 함수 호출
         }
-        if (message.data() == "Engine__stop/"){
-          Engine_Stop(); // 엔진 stop
+        if (message.data() == "Engine__stop/"){  // 스탑 명령 수신시
+          Engine_Stop();                         // 엔진스탑 함수 호출
         }
     });
 }
@@ -105,6 +109,7 @@ void loop() {
         last_10sec = millis();
     }
 
+    // 이건 테스트용 완성되면 큰 필요없음
     unsigned long t2 = millis();
     if((t2 - last_10sec2) > 10 * 1000 && digitalRead(LED_BUILTIN) == LOW){ // 시간 지정
        Start_Engine_seconds = "";
@@ -119,13 +124,29 @@ void loop() {
 //    delay(500);
 }
 
+
+/////////////////// 이하 동작 함수 ///////////////////////
+
+void SmartKey_Start(){
+      client.send("VERACRUZ : Start SmartKey");
+      digitalWrite(Relay_3_Smartkey, LOW);     // 스마트키 배터리 릴레이 연결
+}
+void SmartKey_Stop(){
+      delay(300);       
+      client.send("VERACRUZ : Stop SmartKey");
+      digitalWrite(Relay_3_Smartkey, HIGH);     // 스마트키 배터리 릴레이 해제
+}
+
 void Engine_Start(){
 
  // 추가할 것
- // 현재 시동온오프 상태 체크 후 오프이면 시동 절차 시작하기. 예정
+ // 현재 시동온오프 상태 체크 후 오프이면 시동 절차 시작하기. 예정, => 완료.
+ // 딜레이함수 말고 다른방법 있으면 좋으려나?
+ 
     if(!digitalRead(LED_BUILTIN) == LOW){
-    
-      delay(300);
+
+      SmartKey_Start();
+      delay(1500);
       client.send("VERACRUZ : Start btn 1");
       digitalWrite(Relay_1_Engine, LOW);     //-------------------
       delay(300);                             // 시동버튼 1회
@@ -153,6 +174,7 @@ void Engine_Start(){
 
       client.send("VERACRUZ : ### Start Engine!! ###");
       digitalWrite(LED_BUILTIN, LOW);
+      
     } else if(digitalRead(LED_BUILTIN) == LOW){
         client.send("VERACRUZ : engine running");
         // 켜져 있으면 클라이언트에게 엔진시동 명령어 브로드캐스트 하게...
@@ -169,6 +191,8 @@ void Engine_Stop(){
 
     client.send("VERACRUZ : ### Stop Engine!! ###");
     digitalWrite(LED_BUILTIN, HIGH);
+    SmartKey_Stop();
+    
   } else if(!digitalRead(LED_BUILTIN) == LOW){
         client.send("VERACRUZ : engine not running");
   }
