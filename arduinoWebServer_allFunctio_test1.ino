@@ -35,43 +35,45 @@ String response = "\
        console.log('WebSocket Error ', error);\
     };\
     connection.onmessage = function(e) {\
-       let first_char = e.data.charAt(0);\
-       if(first_char==1)document.getElementById('cb').checked = true;\       
-       if(first_char==0)document.getElementById('cb').checked = false;\
-       let index_data = e.data.substring(0,13);\
-       if(index_data=='Engine_start/')document.getElementById('cb_Engine').checked = true;\
-       if(index_data=='Engine__stop/')document.getElementById('cb_Engine').checked = false;\
+       let index_data = e.data.substring(0,10);\
+       if(index_data=='VERACRUZ :'){\
+            if(e.data=='VERACRUZ : ### Start Engine!! ###' || e.data=='VERACRUZ : Engine_running..=3=3=3'){ \
+                 document.getElementById('btn_Engine_state').value='START';\
+                 document.getElementById('btn_Engine_state').style.backgroundColor='#088A29';\
+                 setTimeout(() => document.getElementById('btn_Engine').disabled = false, 7000);\
+            } else if(e.data=='VERACRUZ : ### Stop Engine!! ###' || e.data=='VERACRUZ : engine... at.. rest...'){ \
+                 document.getElementById('btn_Engine_state').value='STOP';\
+                 document.getElementById('btn_Engine_state').style.backgroundColor='#A4B0B9';\
+                 setTimeout(() => document.getElementById('btn_Engine').disabled = false, 7000);\
+            }\ 
+        }\
        let MsgMoniter = e.data;\
+       if(e.data == 'Engine_start/' || e.data == 'Engine__stop/'){\
+          document.getElementById('btn_Engine').disabled = true;\
+       }\
        document.getElementById('Msg_Moniter').value += MsgMoniter + '\\n';\
        document.getElementById('Msg_Moniter').scrollTop = document.getElementById('Msg_Moniter').scrollHeight;\
     };\
     function send_msg() {\
-       if(document.getElementById('cb').checked){\
-           connection.send('1');\
-       }\
-       else {\
-           connection.send('0');\
-       }\
-    };\
-    function send_msg2() {\
-       if(document.getElementById('cb_Engine').checked){\
+       if(document.getElementById('btn_Engine_state').value=='STOP'){\
+           document.getElementById('btn_Engine').disabled=true;\
            connection.send('Engine_start/');\
        }\
-       else {\
+       else if(document.getElementById('btn_Engine_state').value=='START'){\
+           document.getElementById('btn_Engine').disabled=true;\
            connection.send('Engine__stop/');\
        }\
     };\
    </script>\
 </head>\
-<body>\
-체크 Engine_start/<br>\
-해제 Engine__stop/<br>\
-<input id=\"cb_Engine\" size=25 type=\"checkbox\" onChange=\"send_msg2()\"><br>\
-시리얼 모니터<br>\
-<textarea id=\"Msg_Moniter\" readonly cols='70' rows='12'></textarea><br>\
+<body bgcolor='#356cb1ff'>\
+Engine Start & Stop Test<br><br>\
+<input id='btn_Engine_state' type='button' value='Hello' style=\"background-color:#FFFFFF;font-size : 20px; width: 80px; height: 70px;\"></button>\
+<input id='btn_Engine' type='button' value='START & STOP' onClick='send_msg()' style=\"background-color:#A9D0F5;font-size : 22px; width: 200px; height: 70px;\"><br>\
+Message Monitor<br>\
+<textarea id='Msg_Moniter' readonly cols='70' rows='12'></textarea><br>\
 </body>\
 </html>";
-
 
 void setup() {
     USE_SERIAL.begin(115200);
@@ -79,12 +81,13 @@ void setup() {
     //USE_SERIAL.setDebugOutput(true);
 
     pinMode(LED_BUILTIN, OUTPUT); // LED 점등 테스트용
+    digitalWrite(LED_BUILTIN, HIGH); // 초기 부팅시 끄기(엔진 시동아닌상태로 인식하게)
 
     USE_SERIAL.println();
     USE_SERIAL.println();
     USE_SERIAL.println();
 
-    for(uint8_t t = 5; t > 0; t--) {
+    for(uint8_t t = 4; t > 0; t--) {
         USE_SERIAL.printf("[SETUP] BOOT WAIT %d...\n", t);
         USE_SERIAL.flush();
         delay(1000);
@@ -131,9 +134,6 @@ String veracruz_name = "";
 // 웹소켓 이벤트 관련
 // 클라이언트에서 서버쪽으로 값이 전송되었을때 뭘할거냐?            ↓바이트 배열이라 함
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
-    String State_test = "";
-  
-    //웹소켓이벤트의 타입 
     switch(type) {
         case WStype_DISCONNECTED:
             USE_SERIAL.printf("[%u] Disconnected!\n", num);
@@ -144,24 +144,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
                                   num, ip[0], ip[1], ip[2], ip[3], payload);
                                   
             // 현재 상태를 방금 접속한 클라이언트로 전송하고 반영하기 테스트
-//            USE_SERIAL.printf("[%u]\n client_data : %s\n payload : %s\n", 
-//                                num, Engine_state, payload); //내용알아보기 테스트
-                                
-            //webSocket.sendTXT(num, Engine_state); //현재 안 됨.
-            //## 지금 접속하는 클라이언트에게만 현재 상태를 반영하기 위한 메시지 보내기.
-            //## 테스트, 스트링은 되는데 받은 메시지가 저장되는 payload 외의 스트링변수는 안되는 듯?
-            //## 방법을 찾아라. 
-            // https://github.com/Links2004/arduinoWebSockets/blob/master/src/WebSocketsServer.cpp 참조
-          
-            //##  Serial.println(ip.toString());  //## .toString() 이거 한번 해봐
-            //## [출처] NodeMCU(혹 아두이노)를 이용하여 웹소켓 통신하기(1)|작성자 코스모스
-
-          
-            
-            // send message to client
-            // num = 클라이언트 번호
-            //webSocket.sendTXT(num, "Connected");
-            //uint8_t * payload("내가 전송할 말"); // 모든 클라이언트에게 메시지 전송
+            // 엔진 시동걸려 있으면 ESP8266 서버 & 클라이언트 둘다 빌트인 LED를 켜놨기 때문에 시동 유무 알 수 있음
+            if(digitalRead(LED_BUILTIN) == LOW){
+//              webSocket.sendTXT(num, "Engine_start/");
+              webSocket.sendTXT(num, "VERACRUZ : Engine_running..=3=3=3");
+            } else if(digitalRead(LED_BUILTIN) == HIGH){
+//              webSocket.sendTXT(num, "Engine__stop/");
+              webSocket.sendTXT(num, "VERACRUZ : engine... at.. rest...");
+            }
         }
             break;
             
@@ -169,68 +159,42 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         // 메시지 수신부
             USE_SERIAL.printf("[%u] get Text: %s\n", num, payload);
 
-            
-            
-//            for(int i=0; i<8; i++){
-//               Led_state += (char)payload[i];            
-//              // LED 온오프를 위한 스트링내 0~7위치 문자 검출하여 저장
-//            }
-
             for(int i=0; i<length; i++){
-               state += (char)payload[i];            
-              // payload 길이만큼 뽑아내서 저장 
+               state += (char)payload[i];
+              // payload length만큼 뽑아내서 저장, length넣으면 입력된 모든글자, 숫자 넣으면 원하는만큼의 길이
+              // payload는 바이트 배열임.  사용자가 길이지정가능. 
             }
-            
-            for(int i=0; i<15; i++){ 
-              veracruz_name += (char)state[i];  // state 대신 payload를 써보면? 어차피 같아보이는데
-//              // 스트링내 0~i번째 문자 검출
 
-//----------------------------------------------------------------------------------------
-            }
-            if(veracruz_name == "VERACRUZ : I am"){ 
+            // 받은 메시지에 "VERACRUZ :" 문자가 0~10에 포함되어 있으면 실행
+            if(state.substring(0,10)=="VERACRUZ :"){ // 서브스트링 0번째~10번째 앞자리까지 읽어서 반영
               webSocket.broadcastTXT(state);
             }
-//-------------------------------------------------------------------------------------
+              
 //------------↓↓↓↓↓  엔진 온오프 관련 테스트 중  ------------------------------------------------
 //-------------------------------------------------------------------------------------
             // led 명령어 들어오면 Led_state에 on off 상태 저장
-            if(state == "Engine_start/" || state == "Engine__stop/"){
-               Engine_state = state;
-               if (Engine_state == "Engine_start/"){
+            if(state == "VERACRUZ : ### Start Engine!! ###" || state == "VERACRUZ : ### Stop Engine!! ###"){
+               if (state == "VERACRUZ : ### Start Engine!! ###"){
                  digitalWrite(LED_BUILTIN, LOW);
                }
-               else if (Engine_state == "Engine__stop/"){
+               else if (state == "VERACRUZ : ### Stop Engine!! ###"){
                  digitalWrite(LED_BUILTIN, HIGH);
                }
+            }
+            if(state == "Engine_start/" || state == "Engine__stop/"){
+               Engine_state = state;
                webSocket.broadcastTXT(Engine_state);
-//               Engine_state = "Led_state : " + Engine_state + "입니다.";
-//               webSocket.broadcastTXT(Engine_state);
                USE_SERIAL.printf("broadcast Text : ");
                USE_SERIAL.println(Engine_state);
-
             }
 //-----------↑↑↑↑↑=-엔진관련---------------------------------------------------------------------
-            
-//            webSocket.broadcastTXT(state);
-                        
-//            webSocket.broadcastTXT(payload, length); 
-//            USE_SERIAL.printf("payload : %s\n",payload);
-            
-            // payload는 바이트 배열임.        길이지정가능. 
-            // length넣으면 입력된 모든글자, 숫자 넣으면 원하는만큼의 길이
-
-
-            //쓰고 비워야 뒤에 붙어나오지 않더라고
+            //쓰고 비워야 뒤에 계속 붙어나오지 않더라고
             Engine_state = "";
             state = "";
-            veracruz_name = "";
             
             break;
     }
-
 }
-
-
 
 unsigned long last_10sec = 0;
 unsigned int counter = 0;
@@ -239,22 +203,18 @@ void loop() {
 
     webSocket.loop();
     server.handleClient();
-    
+   
     unsigned long t = millis();
     // 
     if((t - last_10sec) > 10 * 6000) { //지정 시간 마다 브로드캐스트 테스트 1000은 1초
         counter++;
         server_start_time= "Server Start " + (String)counter + " Minute"; 
-        // esp8266 클라이언트가 메시지 주고받는 작동이 없는 시간이 길어지면다운되는것 같아서 
-        //경과시간 및 지속적 메시지 보내서 경과 지켜보기
+        // 웹소켓 클라이언트가 작동없는 시간 길어지면 다운되는것 같아서 서버에게 주기적 메시지 전송
         
         USE_SERIAL.printf("server start :  %d Minute\n", counter);
         webSocket.broadcastTXT(server_start_time);
         last_10sec = millis();
-        
     }
-
-
     // 여기 루프안에는 delay() 절대 쓰면 안된다고 함.
 
 }
