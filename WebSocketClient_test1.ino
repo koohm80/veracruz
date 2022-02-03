@@ -19,10 +19,10 @@
 #include <ArduinoWebsockets.h>
 #include <ESP8266WiFi.h>
 
-const char* ssid = "hodol"; //Enter SSID
-const char* password = "600589rr"; //Enter Password
-const char* websockets_server_host = "219.255.105.186"; //Enter server adress
-const uint16_t websockets_server_port = 8181; // Enter server port
+const char* ssid = "asdf"; //Enter SSID
+const char* password = "adsf"; //Enter Password
+const char* websockets_server_host = "asdf6"; //Enter server adress
+const uint16_t websockets_server_port = 81; // Enter server port
 
 using namespace websockets;
 
