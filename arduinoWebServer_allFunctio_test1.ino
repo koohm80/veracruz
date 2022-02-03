@@ -27,7 +27,7 @@ String response = "\
   <meta name=\"viewport\" content=\"width=device-width\">\
   <meta charset=\"UTF-8\">\
   <script>\
-    var connection = new WebSocket('ws://219.255.105.186:8181/', ['arduino']);\
+    var connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);\
     connection.onopen = function() {\
        connection.send('Connected');\
     };\
