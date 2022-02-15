@@ -420,9 +420,10 @@ void loop() {   // 부팅 후 setup 1회 실행 후  loop 무한반복
     
     if(Voltage < Bat_Volt_Low){
        unsigned long low_volt_t = millis();
-       if((low_volt_t - low_volt_last_sec) >= 10 * 1000){
+       if((low_volt_t - low_volt_last_sec) >= 10 * 1000 && !digitalRead(LED_BUILTIN) == LOW){
     
           low_volt_count++;
+          Serial.println(low_volt_count);
           
           if(low_volt_count >= 6){
             
@@ -432,6 +433,9 @@ void loop() {   // 부팅 후 setup 1회 실행 후  loop 무한반복
           }
           low_volt_last_sec = millis();
        }
+     } else if(Voltage > Bat_Volt_Low){
+      
+          low_volt_count = 0;
      }
         
     
@@ -444,7 +448,7 @@ void Verazruz_Voltage_low_start(){
      
       // 운전자가 스타트버튼 눌러서 시동 절차 중 전압 다운될때를 확인하고 저전압 차단 구현해야 함. ★ 22.02.13 22:54 부터 생각 중
       // 앱으로 시동 중 다운될때와는 다름(제어불가 셋팅 함)
-   if(!Driver_Mode && Voltage < Bat_Volt_Low && !Engine_state_starting && digitalRead(LED_BUILTIN) == HIGH && Boot_minute >= 2){  // 전압이 낮고 엔진이 꺼져 있으면. 실행
+   if(!Driver_Mode && Voltage < Bat_Volt_Low && !Engine_state_starting && digitalRead(LED_BUILTIN) == HIGH){  //  && Boot_minute >= 2  전압이 낮고 엔진이 꺼져 있으면. 실행
     
 //       if(low_Volt_start_possible){    // 저전압 스타트 가능상태인지 확인 true면 저전압 시동 시작
         
@@ -590,7 +594,10 @@ void Engine_Stop(){
 
   Engine_state_starting = false; // 이제 저전압 시동 가능
 
-  low_volt_last_sec = 0;
+  
+  low_volt_last_sec = 0;  // 저전압 시동 시간 지연시키고 엔진 스톱할때 초기화
+  low_volt_count = 0;
+  
 }
 
 
